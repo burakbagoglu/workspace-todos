@@ -2,7 +2,16 @@
 
 [English](README.md) · Türkçe · [Kullanım kılavuzu](KULLANIM_KILAVUZU.md)
 
-Kod yorumlarındaki **TODO**, **FIXME**, **WARNING**, **INFO**, **NOTE** ve **HACK** etiketlerini renklendirir. Sol ikon çubuğundaki **TODOs** görünümünden workspace'in tamamındaki etiketleri takip edebilirsin.
+Kod yorumlarındaki **TODO**, **FIXME**, **WARNING**, **INFO**, **NOTE**, **HACK** ve **DONE** etiketlerini renklendirir. Sol ikon çubuğundaki **TODOs** görünümünden workspace'in tamamındaki etiketleri takip edebilirsin.
+
+## V2'de yenilikler
+
+- **Tamamlama:** Sonucun yanındaki onay ikonuyla veya sağ tık → **Mark Completed** ile etiketi DONE yap. Açıklama, isim ve çoklu satırlar korunur. İşlem geri alınabilir; dosya otomatik kaydedilmez.
+- **Tamamlananları göster/gizle:** DONE kayıtları başlangıçta gizlidir. **… → Show Completed** ile göster; **Reopen As…** ile yeni etiketini seçerek yeniden aç. Bu görünüm tercihi workspace bazında hatırlanır; **Clear Filters** tercihi değiştirmez. DONE'ın editör vurgusu açık kalır.
+- **`.gitignore`:** Workspace kökleri ve alt klasörlerdeki kurallar panelde ve editörde uygulanır. `!` istisnaları ve açık `.gitignore` dosyasındaki kaydedilmemiş değişiklikler de desteklenir.
+- **Explorer sayacı:** Dosyanın yanında tamamlanmamış etiket sayısı görünür. `9+`, en az 10 kayıt demektir; üzerine gelince tam sayı okunur. Sayaç panel filtrelerinden bağımsızdır ve klasörlere aktarılmaz.
+
+Özel `workspaceTodos.tags` listen varsa tamamlama için `{ "name": "DONE", "color": "#81C995", "enabled": true }` öğesini listene ekle. Mevcut özel listeler otomatik değiştirilmez.
 
 Türkçe kullanım kılavuzunu **TODOs → … → Usage Guide** menüsünden veya komut paletindeki **TODOs: Usage Guide** komutuyla açabilirsin. Kılavuz paket içindeki `KULLANIM_KILAVUZU.md` dosyasında da bulunur.
 
@@ -21,7 +30,7 @@ Başarılı GitHub Actions **CI** çalışmasının **Artifacts → workspace-to
 
 1. VS Code'da Extensions görünümünü aç (`Ctrl+Shift+X`).
 2. Üstteki `…` menüsünden **Install from VSIX…** seç.
-3. Bu klasördeki `workspace-todos-0.1.3.vsix` dosyasını seç. Önceki sürüm kuruluysa aynı eklenti güncellenir; VS Code isterse pencereyi yeniden yükle.
+3. Bu klasördeki `workspace-todos-0.2.0.vsix` dosyasını seç. Önceki sürüm kuruluysa aynı eklenti güncellenir; VS Code isterse pencereyi yeniden yükle.
 4. Projeni aç ve sol çubuktaki liste/onay ikonuna tıkla.
 
 Ana kenar çubuğu mevcut **Ctrl+B** kısayoluyla açılıp kapanır. Eklenti klavye kısayollarını değiştirmez. VS Code **1.95+** gerekir.
@@ -67,6 +76,8 @@ Devam satırlarını da boyamak için:
 ```json
 {
   "workspaceTodos.multiline": true,
+  "workspaceTodos.respectGitIgnore": true,
+  "workspaceTodos.explorerBadges": true,
   "workspaceTodos.highlightMode": "line",
   "workspaceTodos.highlightCommentPrefix": true
 }
@@ -90,6 +101,8 @@ VS Code Settings içinde **Workspace TODOs** ara. Örnek `settings.json`:
   "workspaceTodos.highlightMode": "tag",
   "workspaceTodos.highlightCommentPrefix": true,
   "workspaceTodos.multiline": true,
+  "workspaceTodos.respectGitIgnore": true,
+  "workspaceTodos.explorerBadges": true,
   "workspaceTodos.maxFileSizeKB": 1024,
   "workspaceTodos.tags": [
     { "name": "TODO", "color": "#E5C07B", "enabled": true },
@@ -98,6 +111,7 @@ VS Code Settings içinde **Workspace TODOs** ara. Örnek `settings.json`:
     { "name": "INFO", "color": "#56D4C2", "enabled": true },
     { "name": "NOTE", "color": "#82AAFF", "enabled": true },
     { "name": "HACK", "color": "#C792EA", "enabled": true },
+    { "name": "DONE", "color": "#81C995", "enabled": true },
     { "name": "REVIEW", "color": "#A8D8A8", "enabled": true }
   ]
 }
@@ -111,7 +125,11 @@ Panel ikonlarının renkleri açık/koyu/yüksek kontrast temaya uyarlanır. İs
 
 Önceki sürümden güncellediğinde kendi `workspaceTodos.tags` listen varsa yeni varsayılanlar bu listenin yerine geçmez. INFO kullanmak için listene `{ "name": "INFO", "color": "#56D4C2", "enabled": true }` ekle veya etiketi ayarlardan varsayılana döndür.
 
-`workspaceTodos.include` ve `workspaceTodos.exclude`, workspace köklerine göre glob listeleridir. Varsayılan olarak `.git`, `node_modules`, derleme çıktıları, sanal ortamlar, minify dosyaları ve kilit dosyaları dışlanır. Listeyi değiştirirken korumak istediğin varsayılan dışlamaları da ekle. Dışlamalar açık dosyaların vurguları için de geçerlidir. `.gitignore`, `files.exclude` ve `search.exclude` bu sürümde otomatik içe aktarılmaz.
+`workspaceTodos.include` ve `workspaceTodos.exclude`, workspace köklerine göre glob listeleridir. Varsayılan olarak `.git`, `node_modules`, derleme çıktıları, sanal ortamlar, minify dosyaları ve kilit dosyaları dışlanır. Listeyi değiştirirken korumak istediğin varsayılan dışlamaları da ekle. Dışlamalar açık dosyaların vurguları için de geçerlidir.
+
+`respectGitIgnore` varsayılan olarak açıktır. Kök ve alt klasörlerdeki `.gitignore` kurallarını uygular; kural değişince yeniden tarar. Dışlanan üst klasör açılmadan içindeki dosya `!` ile geri alınamaz. `.gitignore` istisnaları `workspaceTodos.exclude` kurallarını aşmaz. Workspace dışındaki üst klasör kuralları, global Git kuralları ve `.git/info/exclude` okunmaz; dosyanın Git'te takip edilmesi kontrol edilmez. Kurala uyan takipteki dosyalar da dışlanır. `false` yaparak bu özelliği kapatabilirsin. `files.exclude` ve `search.exclude` içe aktarılmaz.
+
+`explorerBadges` varsayılan olarak açıktır. `false` yaparak Explorer sayaçlarını kapatabilirsin. DONE kayıtları sayılmaz; tamamlanmamış kayıt kalmayınca dosyanın sayacı kaybolur.
 
 Varsayılan dosya sınırı 1 MiB'dir. İkili, okunamayan veya büyük dosyalar atlanır; görünümde atlanan dosya sayısı, **Show Scan Details** ile nedenleri görülebilir. UTF-8 ve BOM içeren UTF-16 metin dosyaları desteklenir. Veriler yerel işlenir; sunucu veya API anahtarı gerekmez.
 
@@ -133,6 +151,6 @@ npm run test:integration
 npm run package
 ```
 
-Entegrasyon testleri `.test-runs/` içinde ayrı profil ve iki köklü test workspace'i kullanır. Windows'ta yerel VS Code otomatik bulunur. Başka bir konum veya platform için `VSCODE_EXECUTABLE_PATH` ortam değişkenini belirt. Alternatif olarak `VSCODE_TEST_VERSION=1.95.3` ile resmi VS Code test kopyası indirilebilir. Test sonuçları `test-results/integration.json` dosyasına yazılır. Paketleme çıktısı `workspace-todos-0.1.3.vsix` olur; Marketplace yayını yapmaz.
+Entegrasyon testleri `.test-runs/` içinde ayrı profil ve iki köklü test workspace'i kullanır. Windows'ta yerel VS Code otomatik bulunur. Başka bir konum veya platform için `VSCODE_EXECUTABLE_PATH` ortam değişkenini belirt. Alternatif olarak `VSCODE_TEST_VERSION=1.95.3` ile resmi VS Code test kopyası indirilebilir. Test sonuçları `test-results/integration.json` dosyasına yazılır. Paketleme çıktısı `workspace-todos-0.2.0.vsix` olur; Marketplace yayını yapmaz.
 
 Katkı ve geliştirme ayrıntıları için [CONTRIBUTING.md](CONTRIBUTING.md), lisans için [LICENSE](LICENSE) dosyasına bak.

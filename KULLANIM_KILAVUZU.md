@@ -1,6 +1,6 @@
 # Workspace TODOs — Kullanım Kılavuzu
 
-Sürüm 0.1.3 · VS Code 1.95 ve üzeri
+Sürüm 0.2.0 · VS Code 1.95 ve üzeri
 
 Workspace TODOs, kod yorumlarındaki etiketleri renklendirir ve projedeki tüm etiketleri sol kenar çubuğunda toplar. Dosyaları tek tek açmadan yapılacak işleri, hataları ve açıklamaları görebilir; bir sonuca tıklayarak ilgili satıra gidebilirsin.
 
@@ -12,13 +12,13 @@ VSIX paketini kaynak koddan `npm ci` ve `npm run package` komutlarıyla oluştur
 
 1. VS Code'da **Ctrl+Shift+X** ile Extensions görünümünü aç.
 2. Extensions başlığındaki **…** menüsünden **Install from VSIX…** seç.
-3. `workspace-todos-0.1.3.vsix` dosyasını seç.
+3. `workspace-todos-0.2.0.vsix` dosyasını seç.
 4. VS Code isterse **Reload** ile pencereyi yeniden yükle.
 5. Proje klasörünü veya workspace'ini aç; sol ikon çubuğundaki liste/onay simgeli **TODOs** görünümünü seç.
 
 Önceki sürüm kuruluysa aynı eklenti güncellenir. **Ctrl+B**, ana kenar çubuğunu gizler veya gösterir. TODOs görünümünü seçmek için kendi ikonuna tıkla.
 
-### INFO güncelleme notu
+### V2 güncelleme notu
 
 Varsayılan etiket listesini kullanıyorsan INFO güncelleme sonrası otomatik kullanılabilir. Ayarlarına daha önce kendi `workspaceTodos.tags` listeni yazdıysan bu liste korunur. INFO'yu mevcut listene ekle:
 
@@ -27,6 +27,14 @@ Varsayılan etiket listesini kullanıyorsan INFO güncelleme sonrası otomatik k
 ```
 
 Bu satır `workspaceTodos.tags` dizisinin bir öğesi olmalı. Diğer etiketlerini koru. Listeyi özelleştirmeye ihtiyacın yoksa Settings içindeki **Workspace TODOs: Tags** ayarını varsayılana döndürebilirsin.
+
+V2'de tamamlama için özel listene DONE da ekle:
+
+```json
+{ "name": "DONE", "color": "#81C995", "enabled": true }
+```
+
+Varsayılan listeyi kullanıyorsan DONE otomatik gelir. V2'de `.gitignore` desteği ve Explorer sayaçları da varsayılan olarak açıktır. Güncellemeden sonra bir dosya listeden çıkarsa `.gitignore` kurallarını kontrol et; eski tarama davranışına dönmek için `workspaceTodos.respectGitIgnore` değerini `false` yapabilirsin.
 
 ## 2. Hızlı başlangıç
 
@@ -55,6 +63,7 @@ Bir sonuca tıkla: ilgili dosya açılır, etiket seçilir ve satır görünür 
 | INFO | Kodun çalışma şekli hakkında bilgi | Turkuaz |
 | NOTE | Geliştirici notu veya hatırlatma | Mavi |
 | HACK | Geçici çözüm veya sonradan gözden geçirilecek yaklaşım | Mor |
+| DONE | Tamamlanmış iş | Yeşil |
 
 Örneğin `INFO: Sonuçlar önbellekten okunur` çalışma davranışını açıklar; `NOTE: API v2'ye geçerken bu bölümü kontrol et` bir geliştirici notudur. Bu ayrım kullanım önerisidir; etiketleri kendi çalışma biçimine göre kullanabilirsin.
 
@@ -162,16 +171,40 @@ Kurallar:
 | Choose Scope… → Entire workspace | Workspace'in tüm sonuçlarını gösterir. |
 | Choose Scope… → Active file | Yalnızca aktif editör dosyasının sonuçlarını gösterir. |
 | Clear Filters | Arama ve etiket filtrelerini temizler; kapsamı tüm workspace'e döndürür. |
+| Show Completed / Hide Completed | Tamamlanmış DONE kayıtlarını listede gösterir veya gizler. |
+| Mark Completed | Sonucun etiketini DONE yapar; sonuç üzerindeki ikon veya sağ tık menüsünde bulunur. |
+| Reopen As… | DONE sonucunu seçtiğin açık etikete dönüştürür; sonuç üzerindeki ikon veya sağ tık menüsünde bulunur. |
 | Collapse All | Ağaç gruplarını daraltır. |
 | Settings | Eklenti ayarlarını açar. |
 | Show Scan Details | Atlanan dosyaları ve tarama hatalarını Output kanalında gösterir. |
 | Usage Guide | Bu kılavuzu açar. |
 
-**Search**, **Filter Tags** ve **Refresh** üst araç çubuğundadır. Diğer komutlar görünümün **…** menüsünde bulunur. Komut paletinde **TODOs:** yazarak da komutları arayabilirsin.
+**Search**, **Filter Tags** ve **Refresh** üst araç çubuğundadır. Tamamlama ve yeniden açma sonuç üzerinde, diğer komutlar görünümün **…** menüsündedir. Genel görünüm komutlarını komut paletinde **TODOs:** yazarak da bulabilirsin.
 
 Arama düz metinle çalışır; regex değildir ve büyük/küçük harfe duyarsızdır. Arama kutusunu boş bırakıp onaylayarak aramayı temizleyebilirsin. Etiket filtresindeki tüm işaretleri kaldırırsan hiçbir sonuç gösterilmez.
 
 Arama, etiket filtresi ve kapsam birlikte uygulanır. Örneğin **Active file + INFO + GPU** yalnızca aktif dosyada INFO etiketi taşıyan ve aramaya uyan sonuçları gösterir. Gruplama ve filtreler workspace bazında hatırlanır. Bu filtreler editördeki kod vurgularını değiştirmez.
+
+### İşleri tamamla ve yeniden aç
+
+1. Sonucun üzerine gelip onay ikonuna tıkla veya sağ tık → **Mark Completed** seç.
+2. Yalnızca etiket değişir: `# TODO(burak): Kontrol ekle` → `# DONE(burak): Kontrol ekle`. Açıklama, isim, yorum işareti, girinti ve devam satırları korunur.
+3. DONE başlangıçta listede gizlidir. **… → Show Completed** ile göster; **Hide Completed** ile tekrar gizle. Bu tercih workspace bazında saklanır; **Clear Filters** tercihi değiştirmez.
+4. DONE sonucundaki **Reopen As…** komutuyla TODO, FIXME veya etkin başka bir etiketi seç. Önceki etiket otomatik saklanmaz; yeniden açarken yeni etiketi sen seçersin.
+
+Tamamlama normal bir dosya düzenlemesidir; **Ctrl+Z** ile geri alınabilir. Dosya otomatik kaydedilmez; değişikliği kalıcı yapmak için **Ctrl+S** kullan. Bir sonuç bu sırada taşınmış veya değişmişse yanlış yere yazmak yerine yenileme mesajı gösterilir. **Refresh** sonrası tekrar dene.
+
+DONE'ı panelde gizlemek editör vurgusunu kapatmaz. Sadece `tags` ayarında kapatılan etiket tarama ve vurgudan çıkar. Özel listen varsa tamamlama için etkin DONE bulunmalıdır.
+
+### Explorer sayaçları
+
+Explorer'da dosya adının yanında tamamlanmamış etiket sayısı görünür. Tüm etkin etiketler sayılır; DONE sayılmaz. Gösterim `1`–`9` veya en az 10 kayıt için `9+` olur; üzerine gelince tam sayı okunur. Panelin arama, kapsam ve etiket filtreleri bu sayıyı değiştirmez. Çoklu satır kaydı tek etiket sayılır.
+
+Sayaç dosyada tamamlanmamış kayıt kalmayınca kaybolur; klasörlere toplam aktarılmaz. Renk en yüksek önceliğe göre FIXME, WARNING, TODO, HACK, INFO, NOTE sırasıyla seçilir. Özel etiketler ortak özel etiket rengini kullanır. Kapatmak için:
+
+```json
+{ "workspaceTodos.explorerBadges": false }
+```
 
 ## 6. Vurgulama ayarları
 
@@ -223,6 +256,7 @@ Varsayılan olarak açıktır: `# TODO`, `// FIXME`, `/* INFO` ve `<!-- NOTE` ba
     { "name": "INFO", "color": "#56D4C2", "enabled": true },
     { "name": "NOTE", "color": "#82AAFF", "enabled": true },
     { "name": "HACK", "color": "#C792EA", "enabled": true },
+    { "name": "DONE", "color": "#81C995", "enabled": true },
     { "name": "REVIEW", "color": "#A8D8A8", "enabled": true }
   ]
 }
@@ -242,7 +276,7 @@ Panel ikonları ayrı tema renklerini kullanır; açık, koyu ve yüksek kontras
 }
 ```
 
-Diğer renk adları: `workspaceTodos.todoForeground`, `fixmeForeground`, `warningForeground`, `noteForeground`, `hackForeground` ve `customForeground`. Bu kısaltılmış adların her biri `workspaceTodos.` önekiyle yazılmalıdır. Özel etiket ikonları `workspaceTodos.customForeground` rengini paylaşır.
+Diğer renk adları: `workspaceTodos.todoForeground`, `fixmeForeground`, `warningForeground`, `noteForeground`, `hackForeground`, `doneForeground` ve `customForeground`. Bu kısaltılmış adların her biri `workspaceTodos.` önekiyle yazılmalıdır. Özel etiket ikonları `workspaceTodos.customForeground` rengini paylaşır. Explorer sayaçları da aynı tema renklerini kullanır.
 
 ## 8. Taranacak dosyaları seçme
 
@@ -258,7 +292,27 @@ Tüm desteklenen dosyalar için include varsayılanı `["**/*"]` olmalıdır. Bo
 
 Varsayılan dışlamalar arasında `.git`, `node_modules`, `dist`, `build`, `out`, `coverage`, sanal ortamlar ve üretilmiş/minify dosyaları vardır. Kendi dışlama listen mevcut varsayılanların yerine geçer; yeni desen eklerken korumak istediğin eski öğeleri de listede tut. Açık dosyalar için de aynı kurallar geçerlidir.
 
-`.gitignore`, `files.exclude` ve `search.exclude` bu sürümde otomatik içe aktarılmaz.
+### .gitignore kuralları
+
+`workspaceTodos.respectGitIgnore` varsayılan olarak `true` değerindedir. Her workspace kökündeki ve alt klasörlerindeki `.gitignore` dosyaları uygulanır. Kurallar açık dosyanın vurgusunu da etkiler. Kural dosyasını oluşturmak, silmek veya düzenlemek yeniden tarama başlatır; açık `.gitignore` içindeki kaydedilmemiş değişiklikler de kullanılır.
+
+Örneğin kökteki `.gitignore` içine şunları yaz:
+
+```gitignore
+generated/
+*.generated.ts
+!keep.generated.ts
+```
+
+`generated/` içeriği ve `.generated.ts` dosyaları dışlanır; `keep.generated.ts` istisnadır. Dışlanan bir üst klasör açılmadan içindeki dosya `!` ile geri alınamaz. Alt klasör kuralları kendi alt ağacında geçerlidir. `.gitignore` istisnaları `workspaceTodos.exclude` kurallarını aşmaz.
+
+Workspace'in üstündeki `.gitignore`, global Git kuralları ve `.git/info/exclude` okunmaz. Dosyanın Git'te takip edilip edilmediği kontrol edilmez; kurala uyan takipteki dosyalar da dışlanır. `files.exclude` ve `search.exclude` içe aktarılmaz. `.gitignore` okumayı kapatmak için:
+
+```json
+{ "workspaceTodos.respectGitIgnore": false }
+```
+
+Bu durumda include/exclude kuralları uygulanmaya devam eder. Okunamayan bir `.gitignore` için ilgili dosyalar atlanır ve neden **Show Scan Details** içinde raporlanır.
 
 `workspaceTodos.maxFileSizeKB` varsayılan olarak **1024 KiB / 1 MiB** değerindedir. Büyük dosya gerekiyorsa sınırı ayarlardan artırabilirsin. İkili, okunamayan veya sınırı aşan dosyalar atlanır; nedenleri **Show Scan Details** içinde gösterilir.
 
@@ -268,19 +322,22 @@ JavaScript (`js`, `mjs`, `cjs`), TypeScript (`ts`, `mts`, `cts`), JSX, TSX, Pyth
 
 Python f-string içerikleri, HTML içindeki script/style/textarea/title içerikleri, Markdown görev listeleri, notebook hücreleri ve diğer diller bu sürümün tarama kapsamına dahil değildir. Metin dosyalarında UTF-8 ve BOM içeren UTF-16 desteklenir.
 
-Dosya ekleme, değiştirme, silme ve yeniden adlandırma otomatik izlenir. Kod yorumları ve dosya içerikleri eklenti tarafından değiştirilmez. Veriler yerel işlenir; sunucu veya API anahtarı gerekmez.
+Dosya ekleme, değiştirme, silme ve yeniden adlandırma otomatik izlenir. Tarama dosya içeriğini değiştirmez; **Mark Completed** ve **Reopen As…** komutları yalnızca seçtiğin yorumun etiketini düzenler. Veriler yerel işlenir; sunucu veya API anahtarı gerekmez.
 
 ## 10. Sık karşılaşılan durumlar
 
 | Durum | Kontrol et |
 | --- | --- |
 | INFO görünmüyor | Özel `workspaceTodos.tags` listene INFO ekle; **Filter Tags** içinde seçili olduğundan emin ol. |
+| Tamamlanan sonuç kayboldu | **… → Show Completed** seç; varsa arama ve etiket filtrelerini de kontrol et. |
+| Tamamlama çalışmıyor | Özel etiket listende etkin DONE bulunduğundan emin ol; değişmiş sonuç için **Refresh** kullan. |
+| Explorer sayacı görünmüyor | **Explorer Badges** açık olmalı. DONE kayıtları sayılmaz; dışlanan dosyalar ve klasörler sayaç almaz. VS Code'un Explorer dosya dekorasyonları da açık olmalı. |
 | Hiç sonuç yok | Workspace klasörünü aç; **Clear Filters** kullan; dosyanın desteklenen dilde ve yorumun içinde olduğundan emin ol. |
 | Yalnızca bir dosya görünüyor | **Choose Scope… → Entire workspace** seç. |
 | Etiket listede var ama kodda boyanmıyor | `highlightMode` değerinin `off` olmadığını kontrol et. |
 | `#` veya `//` boyanmıyor | **Highlight Comment Prefix** ayarını aç. |
-| Dosya hiç taranmıyor | Include/exclude kurallarını, dosya boyutunu ve seçili dil modunu kontrol et; **Show Scan Details** aç. |
+| Dosya hiç taranmıyor | Include/exclude ve `.gitignore` kurallarını, dosya boyutunu ve seçili dil modunu kontrol et; **Show Scan Details** aç. |
 | Bir etiket kapatıldı | `tags` içindeki `enabled` değerini kontrol et. Ayar değişikliği sonrası tarama otomatik yenilenir. |
 | Devam satırları boyanmıyor | **Multiline** açık, **Highlight Mode** `line` olmalı. İlk satırda bir etiket, devam satırlarında aynı hizada yorum işareti bulunmalı. |
-| Güncelleme uygulanmamış görünüyor | Extensions ayrıntılarında 0.1.3 sürümünü kontrol et; gerekirse **Developer: Reload Window** komutunu kullan. |
+| Güncelleme uygulanmamış görünüyor | Extensions ayrıntılarında 0.2.0 sürümünü kontrol et; gerekirse **Developer: Reload Window** komutunu kullan. |
 | Liste beklediğin gibi yenilenmiyor | **Refresh** kullan. Bu komut filtreleri korur; filtreleri sıfırlamak için ayrıca **Clear Filters** kullan. |

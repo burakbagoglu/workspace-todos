@@ -3,6 +3,7 @@ import { decodeText, discoveryExclude, FilePolicy, RevisionStore, WorkQueue } fr
 import { FileRecord, Settings } from './model';
 import { languageFor } from './parser/comments';
 import { parseTags } from './parser/tags';
+import { GitIgnorePolicy } from './gitignore';
 
 interface IndexedFile { file: FileRecord; skipped?: string }
 const SUPPORTED_GLOB = '**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,py,pyw,css,scss,html,htm,jsonc}';
@@ -24,6 +25,7 @@ export class WorkspaceIndexer implements vscode.Disposable {
   private generation = 0;
   private disposed = false;
   private policy: FilePolicy;
+  private ignores = new Map<string, GitIgnorePolicy>();
   scanning = false;
   discoveryError?: string;
 
@@ -33,14 +35,16 @@ export class WorkspaceIndexer implements vscode.Disposable {
     this.subscriptions.push(watcher,
       watcher.onDidChange(uri => this.schedule(uri, 50)),
       watcher.onDidCreate(uri => { void this.created(uri); }),
-      watcher.onDidDelete(uri => this.remove(uri)),
+      watcher.onDidDelete(uri => { this.remove(uri); if (this.isIgnoreFile(uri)) this.requestRefresh(); }),
       vscode.workspace.onDidOpenTextDocument(doc => this.schedule(doc.uri, 0)),
       vscode.workspace.onDidChangeTextDocument(event => this.schedule(event.document.uri)),
       vscode.workspace.onDidCloseTextDocument(doc => this.schedule(doc.uri, 0)),
       vscode.workspace.onDidSaveTextDocument(doc => this.schedule(doc.uri, 0)),
       vscode.workspace.onDidRenameFiles(event => { for (const file of event.files) this.remove(file.oldUri); this.requestRefresh(); }),
       vscode.workspace.onDidCreateFiles(() => this.requestRefresh()),
-      vscode.workspace.onDidDeleteFiles(event => { for (const uri of event.files) this.remove(uri); }),
+      vscode.workspace.onDidDeleteFiles(event => {
+        for (const uri of event.files) { this.remove(uri); if (this.isIgnoreFile(uri)) this.requestRefresh(); }
+      }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => this.requestRefresh())
     );
   }
@@ -50,11 +54,33 @@ export class WorkspaceIndexer implements vscode.Disposable {
   get skipped(): { path: string; reason: string }[] {
     return [...this.store.values.values()].filter(value => value.skipped).map(value => ({ path: value.file.path, reason: value.skipped! }));
   }
-  private describe(uri: vscode.Uri): { relative: string; display: string } | undefined {
+  private describe(uri: vscode.Uri): { relative: string; display: string; root: vscode.WorkspaceFolder } | undefined {
     const root = vscode.workspace.getWorkspaceFolder(uri);
     if (!root) return undefined;
     const relative = uri.path.slice(root.uri.path.replace(/\/$/, '').length + 1);
-    return { relative, display: (vscode.workspace.workspaceFolders?.length ?? 0) > 1 ? `${root.name}/${relative}` : relative };
+    return { relative, display: (vscode.workspace.workspaceFolders?.length ?? 0) > 1 ? `${root.name}/${relative}` : relative, root };
+  }
+  private isIgnoreFile(uri: vscode.Uri) {
+    const name = uri.path.split('/').at(-1);
+    return (process.platform === 'win32' ? name?.toLowerCase() : name) === '.gitignore';
+  }
+  private ignorePolicy(root: vscode.WorkspaceFolder): GitIgnorePolicy {
+    const key = uriKey(root.uri);
+    let policy = this.ignores.get(key);
+    if (!policy) {
+      policy = new GitIgnorePolicy(async directory => {
+        const uri = vscode.Uri.joinPath(root.uri, directory, '.gitignore');
+        const document = this.document(uri);
+        if (document) return document.getText();
+        try { return decodeText(await vscode.workspace.fs.readFile(uri)); }
+        catch (error) {
+          if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') return undefined;
+          throw new Error(`Cannot read ${directory ? directory + '/' : ''}.gitignore: ${error instanceof Error ? error.message : error}`);
+        }
+      });
+      this.ignores.set(key, policy);
+    }
+    return policy;
   }
   private document(uri: vscode.Uri) { return vscode.workspace.textDocuments.find(doc => !doc.isClosed && uriKey(doc.uri) === uriKey(uri)); }
   private notify() {
@@ -67,6 +93,7 @@ export class WorkspaceIndexer implements vscode.Disposable {
     this.refreshTimer = setTimeout(() => { this.refreshTimer = undefined; void this.refresh(); }, 150);
   }
   private async created(uri: vscode.Uri) {
+    if (this.isIgnoreFile(uri)) { this.schedule(uri); return; }
     const description = this.describe(uri);
     if (!description || this.policy.excluded(description.relative)) return;
     if (languageFor(uri.path)) { this.schedule(uri, 50); return; }
@@ -82,6 +109,10 @@ export class WorkspaceIndexer implements vscode.Disposable {
   }
   schedule(uri: vscode.Uri, delay = 250) {
     if (this.disposed) return;
+    if (this.isIgnoreFile(uri)) {
+      if (this.settings.respectGitIgnore && this.describe(uri)) this.requestRefresh();
+      return;
+    }
     const key = uriKey(uri);
     const description = this.describe(uri);
     if (!description || !this.policy.accepts(description.relative) || !languageFor(uri.path, this.document(uri)?.languageId)) {
@@ -106,10 +137,14 @@ export class WorkspaceIndexer implements vscode.Disposable {
     if (!description || !language || !this.policy.accepts(description.relative)) { this.remove(uri); return; }
     const ticket = this.store.begin(key);
     const settings = this.settings;
+    const ignorePolicy = settings.respectGitIgnore ? this.ignorePolicy(description.root) : undefined;
     await this.queue.run(async () => {
       if (!this.store.current(ticket) || this.disposed) return;
       const file: FileRecord = { uri: uri.toString(), path: description.display, matches: [] };
       try {
+        const ignored = ignorePolicy && await ignorePolicy.ignored(description.relative);
+        if (!this.store.current(ticket) || this.disposed) return;
+        if (ignored) { this.remove(uri); return; }
         let document = this.document(uri);
         let text: string;
         if (document) text = document.getText();
@@ -149,6 +184,7 @@ export class WorkspaceIndexer implements vscode.Disposable {
     this.cancellation?.cancel(); this.cancellation?.dispose();
     const cancellation = this.cancellation = new vscode.CancellationTokenSource();
     const generation = ++this.generation;
+    this.ignores = new Map();
     this.store.reset(); this.scanning = true; this.discoveryError = undefined; this.notify();
     try {
       const excludes = discoveryExclude(this.settings.exclude);

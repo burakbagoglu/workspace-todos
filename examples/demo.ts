@@ -4,6 +4,7 @@
 // INFO: Bu işlem sonuçları önbellekten okur
 // NOTE: Etikete tıklayarak bu satıra dönebilirsin
 // HACK: Eski API için geçici çözüm
+// DONE: İlk kurulum tamamlandı; Show Completed ile listede göster
 
 const example = "TODO: Bu bir string; sonuçlarda görünmez.";
 export const message = example;

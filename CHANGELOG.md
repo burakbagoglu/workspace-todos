@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Respect workspace and nested `.gitignore` rules by default, including negation and live rule updates. New `workspaceTodos.respectGitIgnore` setting.
+- New green DONE tag; mark results completed with an undoable tag-only edit that preserves multiline descriptions and owners.
+- Show/hide completed entries per workspace and reopen completed entries as a chosen tag. Re-validate results against the live document before editing.
+- Explorer file badges count active tags, exclude DONE entries and clear when files are deleted or no longer eligible. New `workspaceTodos.explorerBadges` setting.
+- Updated English/Turkish READMEs, bundled Turkish guide and sample comments for V2.
+
 ## 0.1.3
 
 - Multiline tag descriptions in aligned # / // comments and block comments, enabled by default.

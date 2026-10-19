@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { posix } from 'node:path';
 import { filterRecords } from './core';
-import { FileRecord, TAG_COLOR_IDS, TAG_ICONS, TagMatch, ViewState } from './model';
+import { FileRecord, isCompleted, TAG_COLOR_IDS, TAG_ICONS, TagMatch, ViewState } from './model';
 import { WorkspaceIndexer } from './indexer';
 
 export type TodoNode =
@@ -21,7 +21,7 @@ export class TodoTree implements vscode.TreeDataProvider<TodoNode>, vscode.Dispo
     this.state = {
       group: saved.group === 'tag' ? 'tag' : 'file', query: typeof saved.query === 'string' ? saved.query : '',
       tags: Array.isArray(saved.tags) && saved.tags.every(tag => typeof tag === 'string') ? saved.tags : null,
-      scope: saved.scope === 'file' ? 'file' : 'workspace'
+      scope: saved.scope === 'file' ? 'file' : 'workspace', showCompleted: saved.showCompleted === true
     };
     this.view = vscode.window.createTreeView('workspaceTodos.list', { treeDataProvider: this, showCollapseAll: true });
     this.subscriptions.push(this.view, indexer.onDidChange(() => this.refresh()),
@@ -39,8 +39,14 @@ export class TodoTree implements vscode.TreeDataProvider<TodoNode>, vscode.Dispo
   }
   async clearFilters() { await this.setState({ query: '', tags: null, scope: 'workspace' }); }
   refresh() {
+    void vscode.commands.executeCommand('setContext', 'workspaceTodos.showCompleted', this.state.showCompleted);
     const count = this.filtered.reduce((sum, file) => sum + file.matches.length, 0);
     const details = [this.state.scope === 'file' ? 'Active file' : 'Workspace'];
+    if (this.state.showCompleted) details.push('Including completed');
+    else {
+      const completed = this.indexer.records.reduce((sum, file) => sum + file.matches.filter(match => isCompleted(match.tag)).length, 0);
+      if (completed) details.push(`${completed} completed hidden — Show Completed to view`);
+    }
     if (this.state.query) details.push(`Search: ${this.state.query}`);
     if (this.state.tags !== null) details.push(this.state.tags.length ? this.state.tags.join(', ') : 'No tags selected');
     const skipped = this.indexer.skipped.length;
@@ -101,6 +107,7 @@ export class TodoTree implements vscode.TreeDataProvider<TodoNode>, vscode.Dispo
     item.id = `match:${node.groupTag ?? ''}:${file.uri}:${match.line}:${match.character}`;
     item.description = match.description.replace(/\s+/g, ' ').trim() || '(no description)';
     item.iconPath = this.tagIcon(match.tag);
+    item.contextValue = isCompleted(match.tag) ? 'completedTag' : 'activeTag';
     const tooltip = new vscode.MarkdownString().appendMarkdown(`**${match.tag.replace(/[_*]/g, '\\$&')}** · ${location}\n\n`);
     if (match.continuationLines?.length) tooltip.appendCodeblock(match.description, 'text');
     else tooltip.appendText(match.description || '(no description)');

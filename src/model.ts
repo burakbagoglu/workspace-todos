@@ -7,6 +7,8 @@ export interface Settings {
   highlightMode: 'tag' | 'line' | 'off';
   highlightCommentPrefix: boolean;
   multiline: boolean;
+  respectGitIgnore: boolean;
+  explorerBadges: boolean;
   maxFileSizeKB: number;
 }
 export interface TagMatch {
@@ -25,13 +27,14 @@ export interface TagMatch {
   }[];
 }
 export interface FileRecord { uri: string; path: string; matches: TagMatch[] }
-export interface ViewState { group: 'file' | 'tag'; query: string; tags: string[] | null; scope: 'workspace' | 'file' }
-export const DEFAULT_VIEW_STATE: ViewState = { group: 'file', query: '', tags: null, scope: 'workspace' };
+export interface ViewState { group: 'file' | 'tag'; query: string; tags: string[] | null; scope: 'workspace' | 'file'; showCompleted: boolean }
+export const DEFAULT_VIEW_STATE: ViewState = { group: 'file', query: '', tags: null, scope: 'workspace', showCompleted: false };
+export const isCompleted = (tag: string): boolean => tag.toUpperCase() === 'DONE';
 export const TAG_ICONS: Record<string, string> = {
-  TODO: 'checklist', FIXME: 'bug', WARNING: 'warning', INFO: 'info', NOTE: 'note', HACK: 'tools'
+  TODO: 'checklist', FIXME: 'bug', WARNING: 'warning', INFO: 'info', NOTE: 'note', HACK: 'tools', DONE: 'pass'
 };
 export const TAG_COLOR_IDS: Record<string, string> = {
   TODO: 'workspaceTodos.todoForeground', FIXME: 'workspaceTodos.fixmeForeground',
   WARNING: 'workspaceTodos.warningForeground', INFO: 'workspaceTodos.infoForeground', NOTE: 'workspaceTodos.noteForeground',
-  HACK: 'workspaceTodos.hackForeground'
+  HACK: 'workspaceTodos.hackForeground', DONE: 'workspaceTodos.doneForeground'
 };

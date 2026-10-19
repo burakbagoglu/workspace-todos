@@ -7,6 +7,7 @@ def greet(name):
     return f"Merhaba {name}"
 
 # FIXME: Boş isimleri ele al
+# DONE: İlk doğrulama tamamlandı
 
 
 def config_preview():

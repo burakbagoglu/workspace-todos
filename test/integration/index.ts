@@ -42,7 +42,7 @@ export async function run(): Promise<void> {
     await vscode.commands.executeCommand('workspaceTodos.list.focus');
     await waitFor(() => api.tree.view.visible, 'TODOs view visible');
     const commands = await vscode.commands.getCommands(true);
-    for (const command of ['refresh', 'search', 'filter', 'group', 'scope', 'open', 'clearFilters', 'settings', 'guide']) assert.ok(commands.includes(`workspaceTodos.${command}`));
+    for (const command of ['refresh', 'search', 'filter', 'group', 'scope', 'open', 'clearFilters', 'settings', 'guide', 'complete', 'reopen', 'showCompleted', 'hideCompleted']) assert.ok(commands.includes(`workspaceTodos.${command}`));
     assert.equal(api.tree.getChildren().length, 2);
   });
 
@@ -139,6 +139,68 @@ export async function run(): Promise<void> {
     await waitFor(() => !api.tree.view.visible, 'Ctrl+B sidebar hidden');
     await vscode.commands.executeCommand('workbench.action.toggleSidebarVisibility');
     await waitFor(() => api.tree.view.visible, 'Ctrl+B sidebar shown');
+  });
+
+  await check('V2 completion preserves multiline text, supports undo and updates Explorer counts', async () => {
+    const uri = vscode.Uri.joinPath(app, 'v2-completion.ts');
+    const original = '// TODO(burak): First line\n// continuation\n';
+    await fs.writeFile(uri.fsPath, original);
+    await api.indexer.refresh();
+    const document = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(document);
+    assert.equal(api.explorer.provideFileDecoration(uri)?.badge, '1');
+    const file = record(uri)!;
+    const node = { kind: 'match', file, match: file.matches[0] };
+    await vscode.commands.executeCommand('workspaceTodos.complete', node);
+    assert.equal(document.getText(), original.replace('TODO', 'DONE'));
+    assert.equal(document.isDirty, true);
+    assert.equal(await fs.readFile(uri.fsPath, 'utf8'), original);
+    assert.equal(api.explorer.provideFileDecoration(uri), undefined);
+    await vscode.commands.executeCommand('workspaceTodos.hideCompleted');
+    assert.equal(api.tree.filtered.some(file => file.uri === uri.toString()), false);
+    await vscode.commands.executeCommand('workspaceTodos.showCompleted');
+    assert.equal(api.tree.filtered.some(file => file.uri === uri.toString()), true);
+    await vscode.commands.executeCommand('undo');
+    await waitFor(() => record(uri)?.matches[0]?.tag === 'TODO', 'completion undone');
+    assert.equal(document.getText(), original);
+    assert.equal(api.explorer.provideFileDecoration(uri)?.badge, '1');
+    await vscode.commands.executeCommand('workspaceTodos.hideCompleted');
+  });
+
+  await check('V2 live nested gitignore rules affect open files and can be disabled', async () => {
+    const directory = vscode.Uri.joinPath(app, 'v2-ignore');
+    const uri = vscode.Uri.joinPath(directory, 'hidden.ts');
+    const ignoreUri = vscode.Uri.joinPath(directory, '.gitignore');
+    await fs.mkdir(directory.fsPath, { recursive: true });
+    await fs.writeFile(uri.fsPath, '// FIXME: Hidden by nested rule\n');
+    await fs.writeFile(ignoreUri.fsPath, 'hidden.ts\n');
+    await vscode.workspace.openTextDocument(uri);
+    await api.indexer.refresh();
+    assert.equal(record(uri), undefined);
+    assert.equal(api.decorations.ranges(uri, 'FIXME').length, 0);
+    assert.equal(api.explorer.provideFileDecoration(uri), undefined);
+    const rules = await vscode.workspace.openTextDocument(ignoreUri);
+    const edit = new vscode.WorkspaceEdit();
+    edit.insert(ignoreUri, rules.positionAt(rules.getText().length), '!hidden.ts\n');
+    assert.ok(await vscode.workspace.applyEdit(edit));
+    await waitFor(() => record(uri)?.matches[0]?.tag === 'FIXME', 'dirty ignore exception applied');
+    assert.equal(rules.isDirty, true);
+    await vscode.commands.executeCommand('workspaceTodos.refresh');
+    assert.equal(record(uri)?.matches[0]?.tag, 'FIXME');
+    await vscode.window.showTextDocument(rules);
+    await vscode.commands.executeCommand('undo');
+    await waitFor(() => record(uri) === undefined, 'ignore edit undone');
+    const config = vscode.workspace.getConfiguration('workspaceTodos');
+    try {
+      await config.update('respectGitIgnore', false, vscode.ConfigurationTarget.Workspace);
+      await waitFor(() => record(uri)?.matches[0]?.tag === 'FIXME', 'ignore rules disabled');
+      await config.update('explorerBadges', false, vscode.ConfigurationTarget.Workspace);
+      await waitFor(() => api.indexer.settings.explorerBadges === false, 'Explorer badges disabled');
+      assert.equal(api.explorer.provideFileDecoration(uri), undefined);
+    } finally {
+      await config.update('respectGitIgnore', undefined, vscode.ConfigurationTarget.Workspace);
+      await config.update('explorerBadges', undefined, vscode.ConfigurationTarget.Workspace);
+    }
   });
 
   const project = process.env.WORKSPACE_TODOS_PROJECT!;

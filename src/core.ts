@@ -1,5 +1,5 @@
 import { braceExpand, Minimatch } from 'minimatch';
-import { FileRecord, Settings, ViewState } from './model';
+import { FileRecord, isCompleted, Settings, ViewState } from './model';
 
 // VS Code's file search rejects nested brace alternatives. Expand each user
 // pattern before combining exclusions into a single, flat alternative group.
@@ -64,7 +64,7 @@ export function filterRecords(records: FileRecord[], state: ViewState, activeUri
   const tags = state.tags === null ? undefined : new Set(state.tags);
   return records.filter(file => state.scope !== 'file' || file.uri === activeUri).map(file => ({
     ...file,
-    matches: file.matches.filter(match => (!tags || tags.has(match.tag)) &&
+    matches: file.matches.filter(match => (state.showCompleted || !isCompleted(match.tag)) && (!tags || tags.has(match.tag)) &&
       (!query || `${file.path}\n${match.tag}\n${match.description}`.toLocaleLowerCase().includes(query)))
   })).filter(file => file.matches.length > 0).sort((a, b) => a.path.localeCompare(b.path) || a.uri.localeCompare(b.uri));
 }

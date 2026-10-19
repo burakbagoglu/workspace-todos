@@ -27,6 +27,9 @@ Open this folder in VS Code and press **F5** to launch an Extension Development 
 | `src/parser/` | Language-aware comment ranges and tag extraction |
 | `src/indexer.ts` | Workspace discovery, dirty buffers and live file events |
 | `src/core.ts` | File policy, revision guards, work queue and filtering |
+| `src/gitignore.ts` | Cached hierarchical Gitignore rules per workspace root |
+| `src/workflow.ts`, `src/commands.ts` | Validated, undoable tag edits and view commands |
+| `src/explorer.ts`, `src/badges.ts` | Explorer decoration lifecycle and active tag counts |
 | `src/tree.ts` | Native Tree View, grouping and result presentation |
 | `src/decorations.ts`, `src/presentation.ts` | Editor highlights and multiline ranges |
 | `src/settings.ts`, `src/config.ts` | Defaults and setting validation |
@@ -69,6 +72,8 @@ npm run test:integration
 ```
 
 Results are written to `test-results/integration.json`. GUI tests are separate from CI unit tests and require an available desktop session. When changing the view or highlight styles, also inspect light, dark and high contrast themes in the extension host.
+
+For V2 manual checks, complete and reopen a multiline entry, undo the edit, toggle completed visibility, edit a nested `.gitignore` without saving, and confirm Explorer counts clear after completion or deletion. Also check `respectGitIgnore: false` and `explorerBadges: false`. A custom tag array must include an enabled DONE definition for completion.
 
 ## Pull requests
 

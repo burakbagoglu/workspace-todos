@@ -7,14 +7,16 @@ export const DEFAULT_SETTINGS: Settings = {
     { name: 'WARNING', color: '#F5A45D', enabled: true },
     { name: 'INFO', color: '#56D4C2', enabled: true },
     { name: 'NOTE', color: '#82AAFF', enabled: true },
-    { name: 'HACK', color: '#C792EA', enabled: true }
+    { name: 'HACK', color: '#C792EA', enabled: true },
+    { name: 'DONE', color: '#81C995', enabled: true }
   ],
   include: ['**/*'],
   exclude: [
     '**/{.git,node_modules,dist,build,out,coverage,.venv,venv,__pycache__,.next,.nuxt,.vscode-test,.test-profile,.test-extensions,.test-runs,.npm-cache,build-test}/**',
     '**/*.{min.js,min.css,map}', '**/{package-lock.json,yarn.lock,pnpm-lock.yaml}'
   ],
-  caseSensitive: false, highlightMode: 'tag', highlightCommentPrefix: true, multiline: true, maxFileSizeKB: 1024
+  caseSensitive: false, highlightMode: 'tag', highlightCommentPrefix: true, multiline: true,
+  respectGitIgnore: true, explorerBadges: true, maxFileSizeKB: 1024
 };
 
 export function normalizeSettings(raw: Partial<Record<keyof Settings, unknown>>): { settings: Settings; warnings: string[] } {
@@ -55,10 +57,15 @@ export function normalizeSettings(raw: Partial<Record<keyof Settings, unknown>>)
   if (raw.caseSensitive !== undefined && typeof raw.caseSensitive !== 'boolean') warn('caseSensitive');
   if (raw.highlightCommentPrefix !== undefined && typeof raw.highlightCommentPrefix !== 'boolean') warn('highlightCommentPrefix');
   if (raw.multiline !== undefined && typeof raw.multiline !== 'boolean') warn('multiline');
+  for (const key of ['respectGitIgnore', 'explorerBadges'] as const) {
+    if (raw[key] !== undefined && typeof raw[key] !== 'boolean') warn(key);
+  }
   return {
     settings: { tags, include: patterns('include'), exclude: patterns('exclude'), caseSensitive: typeof raw.caseSensitive === 'boolean' ? raw.caseSensitive : false,
       highlightMode: highlightMode as Settings['highlightMode'], highlightCommentPrefix: typeof raw.highlightCommentPrefix === 'boolean' ? raw.highlightCommentPrefix : true,
       multiline: typeof raw.multiline === 'boolean' ? raw.multiline : true,
+      respectGitIgnore: typeof raw.respectGitIgnore === 'boolean' ? raw.respectGitIgnore : true,
+      explorerBadges: typeof raw.explorerBadges === 'boolean' ? raw.explorerBadges : true,
       maxFileSizeKB: maxFileSizeKB as number },
     warnings: [...new Set(warnings)]
   };

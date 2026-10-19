@@ -4,7 +4,7 @@ Highlight comment tags and browse them across your VS Code workspace.
 
 English · [Türkçe](README.tr.md) · [Turkish user guide](KULLANIM_KILAVUZU.md) · [Contributing](CONTRIBUTING.md)
 
-Workspace TODOs brings **TODO**, **FIXME**, **WARNING**, **INFO**, **NOTE** and **HACK** comments into a native Activity Bar view. Jump to the right line, filter by tag or text, and keep the results in sync with unsaved edits.
+Workspace TODOs brings **TODO**, **FIXME**, **WARNING**, **INFO**, **NOTE**, **HACK** and **DONE** comments into a native Activity Bar view. Jump to the right line, filter by tag or text, and keep the results in sync with unsaved edits.
 
 ## Features
 
@@ -14,6 +14,9 @@ Workspace TODOs brings **TODO**, **FIXME**, **WARNING**, **INFO**, **NOTE** and 
 - **Multiline entries:** Continue descriptions in adjacent comments and search their full text.
 - **Native sidebar:** Group by file or tag, filter tags, search descriptions and paths, or focus on the active file.
 - **Live updates:** Tracks edits, file creation, deletion and renaming. Unsaved edits are indexed after a short debounce.
+- **Completion workflow:** Mark a result as DONE, hide completed entries and reopen them as another tag.
+- **Gitignore support:** Workspace and nested `.gitignore` files apply to indexing and highlights.
+- **Explorer counts:** File badges show active tag counts and use the highest-priority tag color.
 - **Local processing:** No account, API key or server is required to use the extension.
 
 ## Installation
@@ -60,8 +63,19 @@ Click a result to open its file and select the tag. The sidebar shows the file n
 | INFO | Information about the code's behavior | Teal |
 | NOTE | A developer note or reminder | Blue |
 | HACK | A temporary workaround | Purple |
+| DONE | Completed work | Green |
 
 Tags match whole words. `TODO_COUNT` is not a tag. Matching is case-insensitive by default, and the colon is optional. An owner can be included, for example `// TODO(name): Add tests`; the extension does not assign tasks to that person.
+
+## V2: completion and Explorer counts
+
+Hover over a result and click its check icon, or right-click **Mark Completed**. Only the tag changes: `// TODO(name): Add tests` becomes `// DONE(name): Add tests`. Descriptions, owners, comment markers and continuation lines are preserved. This is a normal undoable edit in the document; the extension does not save it automatically. If the result has changed since it appeared, refresh the view before retrying.
+
+DONE entries are hidden in the sidebar by default. Use **TODOs → … → Show Completed**, then **Reopen As…** on an entry to choose its new tag. **Hide Completed** hides them again. This preference is remembered per workspace; **Clear Filters** leaves it unchanged. Editor highlights remain visible for enabled DONE tags.
+
+**Upgrading with a custom tag list:** Add `{ "name": "DONE", "color": "#81C995", "enabled": true }` to your `workspaceTodos.tags` array to use completion. Custom lists keep their existing definitions; they are not overwritten.
+
+Explorer badges count active tags in each file, independently of sidebar filters. DONE entries do not contribute. The label is `1`–`9`, or `9+` for ten or more; hover to read the exact count. No badge appears on files with only completed entries, and counts do not propagate to folders. Disable them with `workspaceTodos.explorerBadges`.
 
 ## Multiline comments
 
@@ -113,9 +127,11 @@ Open **TODOs → … → Settings**, or search for **Workspace TODOs** in VS Cod
 
 | Setting | Default | Behavior |
 | --- | --- | --- |
-| `workspaceTodos.tags` | The six tags above | Define tag names, editor colors and enabled state |
+| `workspaceTodos.tags` | The seven tags above | Define tag names, editor colors and enabled state |
 | `workspaceTodos.include` | `["**/*"]` | Include globs relative to each workspace root |
 | `workspaceTodos.exclude` | Dependency, build and generated-file globs | Exclude files from indexing and highlights |
+| `workspaceTodos.respectGitIgnore` | `true` | Also apply workspace and nested `.gitignore` rules |
+| `workspaceTodos.explorerBadges` | `true` | Show active tag counts beside files in Explorer |
 | `workspaceTodos.caseSensitive` | `false` | Require exact tag casing when enabled |
 | `workspaceTodos.highlightMode` | `"tag"` | `tag`, `line` (description and continuations), or `off` |
 | `workspaceTodos.highlightCommentPrefix` | `true` | Also highlight `#`, `//`, `/*`, `<!--` or a JSDoc `*` on tag/continuation lines |
@@ -133,6 +149,7 @@ Custom tag lists replace the defaults. Keep every tag you want to use in the arr
     { "name": "INFO", "color": "#56D4C2", "enabled": true },
     { "name": "NOTE", "color": "#82AAFF", "enabled": true },
     { "name": "HACK", "color": "#C792EA", "enabled": true },
+    { "name": "DONE", "color": "#81C995", "enabled": true },
     { "name": "REVIEW", "color": "#A8D8A8", "enabled": true }
   ]
 }
@@ -140,7 +157,7 @@ Custom tag lists replace the defaults. Keep every tag you want to use in the arr
 
 Tag names are literal text, not regular expressions. They must start with an ASCII letter, contain only letters, digits, `_` or `-`, and be at most 32 characters long. Colors use six-digit hex notation. Setting `enabled` to `false` removes that tag from both indexing and highlights.
 
-Sidebar icon colors are independent of editor highlight colors. Customize them through `workbench.colorCustomizations` using `workspaceTodos.todoForeground`, `fixmeForeground`, `warningForeground`, `infoForeground`, `noteForeground`, `hackForeground` or `customForeground`, each with the `workspaceTodos.` prefix. Custom tags share the custom icon color.
+Sidebar icon colors are independent of editor highlight colors. Customize them through `workbench.colorCustomizations` using `workspaceTodos.todoForeground`, `fixmeForeground`, `warningForeground`, `infoForeground`, `noteForeground`, `hackForeground`, `doneForeground` or `customForeground`, each with the `workspaceTodos.` prefix. Custom tags share the custom icon color. Explorer decorations use the same theme colors.
 
 ## Supported languages and scope
 
@@ -148,7 +165,9 @@ JavaScript (`js`, `mjs`, `cjs`), TypeScript (`ts`, `mts`, `cts`), JSX, TSX, Pyth
 
 Python f-string contents, HTML script/style/textarea/title contents, Markdown task lists, notebook cells and other languages are outside the current scope. Files are read as UTF-8 or BOM-marked UTF-16. Binary, unreadable and oversized files are skipped and reported in **Show Scan Details**.
 
-The extension uses its own include/exclude rules. It does not import `.gitignore`, `files.exclude` or `search.exclude`. Custom exclude arrays replace the defaults, so retain the dependency/build exclusions you need. The same rules apply to open and closed files.
+The extension applies its own include/exclude rules and, by default, `.gitignore` files in each workspace root and its subfolders. Nested rules and `!` exceptions are supported; a child cannot be re-included while its parent directory remains excluded. Rule changes trigger a fresh scan, including unsaved edits in an open `.gitignore`. The same rules apply to open and closed source files and to editor highlights. An exception in `.gitignore` cannot override `workspaceTodos.exclude`.
+
+Set `workspaceTodos.respectGitIgnore` to `false` to scan ignored files that pass include/exclude rules. Git rules above the workspace root, global Git excludes, `.git/info/exclude` and tracked-file status are outside this feature's scope. Matching rules also exclude already tracked files. `files.exclude` and `search.exclude` are not imported. Custom exclude arrays replace the defaults, so retain the dependency/build exclusions you need.
 
 ## Development
 
@@ -160,7 +179,7 @@ npm run build
 
 Open the repository in VS Code and press **F5** to start an Extension Development Host with `examples/`. `npm run watch` rebuilds during development. `npm run package` runs the type check and creates a VSIX.
 
-Unit tests cover comment parsing, Unicode positions, multiline ranges, filtering, file exclusions and stale indexing results. `npm run test:integration` launches a separate VS Code process using a disposable profile; see [CONTRIBUTING.md](CONTRIBUTING.md) for runtime selection and prerequisites. CI runs unit tests and packages the VSIX on pushes and pull requests.
+Unit tests cover comment parsing, Unicode positions, multiline ranges, filtering, Gitignore precedence, completion edits, Explorer counts, file exclusions and stale indexing results. `npm run test:integration` launches a separate VS Code process using a disposable profile; see [CONTRIBUTING.md](CONTRIBUTING.md) for runtime selection and prerequisites. CI runs unit tests and packages the VSIX on pushes and pull requests.
 
 Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
