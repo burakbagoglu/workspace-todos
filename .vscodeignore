@@ -1,0 +1,10 @@
+**/*
+!package.json
+!README.md
+!README.tr.md
+!KULLANIM_KILAVUZU.md
+!CHANGELOG.md
+!LICENSE
+!THIRD_PARTY_NOTICES.txt
+!dist/extension.js
+!media/todos.svg

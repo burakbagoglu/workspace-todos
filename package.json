@@ -1,0 +1,108 @@
+{
+  "name": "workspace-todos",
+  "displayName": "Workspace TODOs",
+  "description": "Highlight comment tags and browse TODO, FIXME, WARNING, INFO, NOTE and HACK across your workspace.",
+  "version": "0.1.3",
+  "publisher": "burak-local",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/burakbagoglu/workspace-todos.git" },
+  "homepage": "https://github.com/burakbagoglu/workspace-todos#readme",
+  "bugs": { "url": "https://github.com/burakbagoglu/workspace-todos/issues" },
+  "engines": { "vscode": "^1.95.0" },
+  "categories": ["Other"],
+  "keywords": ["todo", "fixme", "highlight", "comments", "workspace"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node scripts/build.cjs",
+    "watch": "node scripts/build.cjs --watch",
+    "compile-tests": "tsc --outDir build-test",
+    "test": "npm run compile-tests && node --test build-test/test/unit/*.test.js",
+    "test:integration": "npm run build && npm run compile-tests && node scripts/test-integration.cjs",
+    "vscode:prepublish": "npm run check && npm run build",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "viewsContainers": { "activitybar": [{ "id": "workspaceTodos", "title": "TODOs", "icon": "media/todos.svg" }] },
+    "views": { "workspaceTodos": [{ "id": "workspaceTodos.list", "name": "TODOs", "icon": "media/todos.svg", "contextualTitle": "Workspace TODOs" }] },
+    "colors": [
+      { "id": "workspaceTodos.todoForeground", "description": "TODO icons in the TODOs view.", "defaults": { "dark": "#E5C07B", "light": "#926500", "highContrast": "#FFE082", "highContrastLight": "#795200" } },
+      { "id": "workspaceTodos.fixmeForeground", "description": "FIXME icons in the TODOs view.", "defaults": { "dark": "#F07178", "light": "#C62828", "highContrast": "#FF8A80", "highContrastLight": "#B71C1C" } },
+      { "id": "workspaceTodos.warningForeground", "description": "WARNING icons in the TODOs view.", "defaults": { "dark": "#F5A45D", "light": "#AC5700", "highContrast": "#FFCC80", "highContrastLight": "#8B4500" } },
+      { "id": "workspaceTodos.infoForeground", "description": "INFO icons in the TODOs view.", "defaults": { "dark": "#56D4C2", "light": "#00796B", "highContrast": "#7FFFE3", "highContrastLight": "#005B50" } },
+      { "id": "workspaceTodos.noteForeground", "description": "NOTE icons in the TODOs view.", "defaults": { "dark": "#82AAFF", "light": "#245DB0", "highContrast": "#B3D4FF", "highContrastLight": "#174A8B" } },
+      { "id": "workspaceTodos.hackForeground", "description": "HACK icons in the TODOs view.", "defaults": { "dark": "#C792EA", "light": "#833BA8", "highContrast": "#E1BEE7", "highContrastLight": "#6A208A" } },
+      { "id": "workspaceTodos.customForeground", "description": "Custom tag icons in the TODOs view.", "defaults": { "dark": "#81C995", "light": "#28733B", "highContrast": "#B9F6CA", "highContrastLight": "#1B5E20" } }
+    ],
+    "commands": [
+      { "command": "workspaceTodos.refresh", "title": "Refresh", "category": "TODOs", "icon": "$(refresh)" },
+      { "command": "workspaceTodos.search", "title": "Search", "category": "TODOs", "icon": "$(search)" },
+      { "command": "workspaceTodos.filter", "title": "Filter Tags", "category": "TODOs", "icon": "$(filter)" },
+      { "command": "workspaceTodos.clearFilters", "title": "Clear Filters", "category": "TODOs", "icon": "$(clear-all)" },
+      { "command": "workspaceTodos.group", "title": "Group By…", "category": "TODOs", "icon": "$(list-tree)" },
+      { "command": "workspaceTodos.scope", "title": "Choose Scope…", "category": "TODOs", "icon": "$(files)" },
+      { "command": "workspaceTodos.collapse", "title": "Collapse All", "category": "TODOs", "icon": "$(collapse-all)" },
+      { "command": "workspaceTodos.settings", "title": "Settings", "category": "TODOs", "icon": "$(settings-gear)" },
+      { "command": "workspaceTodos.showOutput", "title": "Show Scan Details", "category": "TODOs", "icon": "$(output)" },
+      { "command": "workspaceTodos.guide", "title": "Usage Guide", "category": "TODOs", "icon": "$(book)" },
+      { "command": "workspaceTodos.open", "title": "Open Tag", "category": "TODOs" }
+    ],
+    "menus": {
+      "commandPalette": [{ "command": "workspaceTodos.open", "when": "false" }],
+      "view/title": [
+        { "command": "workspaceTodos.search", "when": "view == workspaceTodos.list", "group": "navigation@1" },
+        { "command": "workspaceTodos.filter", "when": "view == workspaceTodos.list", "group": "navigation@2" },
+        { "command": "workspaceTodos.refresh", "when": "view == workspaceTodos.list", "group": "navigation@3" },
+        { "command": "workspaceTodos.group", "when": "view == workspaceTodos.list", "group": "1_view@1" },
+        { "command": "workspaceTodos.scope", "when": "view == workspaceTodos.list", "group": "1_view@2" },
+        { "command": "workspaceTodos.collapse", "when": "view == workspaceTodos.list", "group": "1_view@3" },
+        { "command": "workspaceTodos.clearFilters", "when": "view == workspaceTodos.list", "group": "2_filters" },
+        { "command": "workspaceTodos.settings", "when": "view == workspaceTodos.list", "group": "3_settings@1" },
+        { "command": "workspaceTodos.showOutput", "when": "view == workspaceTodos.list", "group": "3_settings@2" },
+        { "command": "workspaceTodos.guide", "when": "view == workspaceTodos.list", "group": "3_settings@3" }
+      ]
+    },
+    "configuration": {
+      "title": "Workspace TODOs",
+      "properties": {
+        "workspaceTodos.tags": {
+          "type": "array",
+          "scope": "window",
+          "description": "Comment tags and their highlight colors. Names are literal text, not regular expressions.",
+          "default": [
+            { "name": "TODO", "color": "#E5C07B", "enabled": true },
+            { "name": "FIXME", "color": "#F07178", "enabled": true },
+            { "name": "WARNING", "color": "#F5A45D", "enabled": true },
+            { "name": "INFO", "color": "#56D4C2", "enabled": true },
+            { "name": "NOTE", "color": "#82AAFF", "enabled": true },
+            { "name": "HACK", "color": "#C792EA", "enabled": true }
+          ],
+          "items": {
+            "type": "object", "required": ["name", "color"], "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+              "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+              "enabled": { "type": "boolean", "default": true }
+            }
+          }
+        },
+        "workspaceTodos.include": { "type": "array", "items": { "type": "string" }, "default": ["**/*"], "scope": "window", "description": "Workspace-relative include globs. Only supported languages are scanned." },
+        "workspaceTodos.exclude": { "type": "array", "items": { "type": "string" }, "default": ["**/{.git,node_modules,dist,build,out,coverage,.venv,venv,__pycache__,.next,.nuxt,.vscode-test,.test-profile,.test-extensions,.test-runs,.npm-cache,build-test}/**", "**/*.{min.js,min.css,map}", "**/{package-lock.json,yarn.lock,pnpm-lock.yaml}"], "scope": "window", "description": "Workspace-relative exclude globs. These apply to both scanning and editor highlights. Gitignore and VS Code search excludes are not imported." },
+        "workspaceTodos.caseSensitive": { "type": "boolean", "default": false, "scope": "window", "description": "Match tag names case-sensitively." },
+        "workspaceTodos.highlightMode": { "type": "string", "enum": ["tag", "line", "off"], "default": "tag", "scope": "window", "description": "Highlight the tag, its description (including enabled multiline continuations), or disable highlights." },
+        "workspaceTodos.highlightCommentPrefix": { "type": "boolean", "default": true, "scope": "window", "description": "Include the comment prefix (#, //, /*, <!--, or a leading JSDoc *) in highlights. Only the first tag on each comment line colors its prefix. Works with both tag and line highlight modes." },
+        "workspaceTodos.multiline": { "type": "boolean", "default": true, "scope": "window", "description": "Include following comment lines in a tag's description. Consecutive line comments must be aligned. Stops at a blank line/comment, source code or another tag. Line highlight mode also highlights continuation lines." },
+        "workspaceTodos.maxFileSizeKB": { "type": "number", "minimum": 1, "maximum": 10240, "default": 1024, "scope": "window", "description": "Maximum file size in KiB. Larger files are skipped and reported." }
+      }
+    }
+  },
+  "dependencies": { "minimatch": "10.2.6", "typescript": "5.9.3" },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.95.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2"
+  }
+}

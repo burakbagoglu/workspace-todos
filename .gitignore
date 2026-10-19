@@ -1,0 +1,30 @@
+node_modules/
+dist/
+build-test/
+.npm-cache/
+.test-profile/
+.test-extensions/
+.test-runs/
+.vscode-test/
+*.vsix
+test-results/
+
+# Local notes and editor state
+/PLAN.md
+.codex/
+.agents/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+*.tgz
